@@ -1,5 +1,38 @@
+from collections import OrderedDict
 import os
 import numpy as np
+
+class Node:
+
+    def __init__(self, parent, ham_value, spam_value, sum_value):
+        self.parent = parent
+        self.left = None
+        self.right = None
+        self.ham_value = ham_value
+        self.spam_value = spam_value
+        self.sum_value = sum_value
+
+    def insert(self, left, right):
+        self.left = left
+        self.right = right
+
+    def print(self):
+        if self.left:
+            self.left.print()
+        print(self.ham_value, self.spam_value)
+        if self.right:
+            self.right.print()
+
+    def printResult(self):
+        if self.left:
+            self.left.printResult()
+        if self.right:
+            self.right.printResult()
+        if self.left is None and self.right is None:
+            if self.ham_value > self.spam_value:
+                print("Message is Ham")
+            elif self.ham_value < self.spam_value:
+                print("Message is Spam")
 
 ham = "/enron2/ham/"
 spam = "/enron2/spam/"
@@ -69,114 +102,169 @@ def readWords():
         if word not in all_words:
             all_words[word] = occur_spam.get(word)
         else:
-            all_words[word] = occur_spam.get(word) + all_words.get(word)
+            all_words[word] = np.abs(all_words.get(word) - occur_spam.get(word))
+            #all_words[word] = all_words.get(word) + occur_spam.get(word)
 
+    entropy = -spam_total / (spam_total + ham_total) * np.log2(spam_total / (spam_total + ham_total)) - ham_total / (
+                 spam_total + ham_total) * np.log2(ham_total / (spam_total + ham_total))
 
-    words_count = 0
-    for word in all_words:
-        words_count += all_words.get(word)
+    #print(entropy)
+    #os.system("pause")
 
-    s_words_count = 0
-    for word in counter_spam:
-        s_words_count += counter_spam.get(word)
+    all_words_sorted = sorted(all_words, key=all_words.get, reverse=True)
 
-    h_words_count = 0
-    for word in counter_ham:
-        h_words_count += counter_ham.get(word)
-
-    # entropy = -spam_total / (spam_total + ham_total) * np.log2(spam_total / (spam_total + ham_total)) - ham_total / (
-    #             spam_total + ham_total) * np.log2(ham_total / (spam_total + ham_total))
-
-    entropy = -(s_words_count/words_count)*np.log2(s_words_count/words_count) - (h_words_count/words_count)*np.log2(h_words_count/words_count)
-    print(entropy)
-
-    info_gain_spam = dict()
-    info_gain_ham = dict()
-
-    temp = []
-
-    # for word in all_words:
-    #     temp_sum = 0
-    #     if word in counter_ham:
-    #         temp_sum += counter_ham.get(word)
-    #     if word in counter_spam:
-    #         temp_sum += counter_spam.get(word)
-    #     temp_sum += 2
-    #
-    #     word_ham = 1
-    #     if word in counter_ham:
-    #         word_ham += counter_ham.get(word)
-    #
-    #     word_spam = 1
-    #     if word in counter_spam:
-    #         word_spam += counter_spam.get(word)
-    #
-    #     entropy_ham = -((word_ham)/temp_sum)*np.log2((word_ham)/temp_sum)
-    #     #print(entropy_ham)
-    #     entropy_spam = -((word_spam)/temp_sum)*np.log2((word_spam)/temp_sum)
-    #
-    #     #temp_div = all_words.get(word)
-    #     occur_ham_word = 1
-    #     if word in occur_ham:
-    #         occur_ham_word += occur_ham.get(word)
-    #
-    #     occur_spam_word = 1
-    #     if word in occur_spam:
-    #         occur_spam_word += occur_spam.get(word)
-    #
-    #     temp_div1 = (occur_spam_word)/(spam_total+1)
-    #     temp_div2 = (occur_ham_word)/(ham_total+1)
-    #
-    #     #print(entropy_ham)
-    #
-    #     gain_ham = entropy - temp_div2*entropy_ham
-    #     gain_spam = entropy - temp_div1*entropy_spam
-    #
-    #     info_gain_ham[word] = gain_ham
-    #     info_gain_spam[word] = gain_spam
+    percent = int(0.01*len(all_words_sorted))
 
     most_imp = dict()
-    for word in all_words:
-        if word in occur_ham:
-            if occur_ham.get(word) > 100:
-                most_imp[word] = all_words.get(word)
 
-    for word in all_words:
-        if word in occur_spam:
-            if occur_spam.get(word) > 100:
-                if word in most_imp:
-                    most_imp[word] = most_imp[word] + occur_spam.get(word)
-                else:
-                    most_imp[word] = occur_spam.get(word)
+    for i in range(0, percent):
+        word = all_words_sorted[i]
+        #print(word)
+        most_imp[word] = all_words.get(word)
+
+    info_gain = dict()
 
     for word in most_imp:
 
-        ham_word = 1
-        if word in occur_ham:
-            ham_word += occur_ham.get(word)
-        spam_word = 1
-        if word in occur_spam:
-            spam_word += occur_spam.get(word)
+        exists = most_imp.get(word)/(spam_total+ham_total)
+        non_exists = 1 - exists
 
-        temp = (ham_word+spam_word)/(ham_total+spam_total+2)
-        temp2 = temp*(ham_total/(ham_total+spam_total+2))
-        print(temp2)
+        entr_ex = entropy*exists
+        entr_non_ex = entropy*non_exists
+
+        res = exists*entr_ex + non_exists*entr_non_ex
+
+        ig = entropy - res
+
+        info_gain[word] = ig
+        #print(ig)
+
+    return ham_total, spam_total, most_imp
+
+def ig(ham_total, spam_total, entropy, word):
+
+    word_sum = 0
+    if word in occur_ham:
+        word_sum += occur_ham.get(word)
+    if word in occur_spam:
+        word_sum += occur_spam.get(word)
+
+    total_emails = spam_total + ham_total + 2
+
+    ham = 1
+    spam = 1
+    if word in occur_ham:
+        ham += occur_ham.get(word)
+    if word in occur_spam:
+        spam += occur_spam.get(word)
+
+    word_exists = word_sum/total_emails
+    word_not_exists = (total_emails-word_sum)/total_emails
+
+    not_exists_ham = (total_emails-ham)/(total_emails)
+    not_exists_spam = (total_emails-spam)/(total_emails)
+
+    exists_ham = (ham)/word_sum
+    exists_spam = (spam)/word_sum
+
+    c_not_ham = not_exists_ham*np.log2(not_exists_ham)
+    c_not_spam = not_exists_spam*np.log2(not_exists_spam)
+
+    c_ham = exists_ham*np.log2(exists_ham)
+    c_spam = exists_spam*np.log2(exists_spam)
+
+    not_sum = -(c_not_ham + c_not_spam)
+    sum = -(c_ham + c_spam)
+
+    ex = word_exists*sum
+    not_ex = word_not_exists*not_sum
+
+    ig = entropy - (ex + not_ex)
+
+    #print(ig)
+
+    return ig
 
 
+def entropy(ham_total, spam_total):
+    return -spam_total / (spam_total + ham_total) * np.log2(spam_total / (spam_total + ham_total)) - ham_total / (
+                 spam_total + ham_total) * np.log2(ham_total / (spam_total + ham_total))
 
-    # temp.sort(reverse=True)
-    # for i in temp:
-    #     print(i)
-    #     #os.system("pause")
+def id3(entropy, ham_total, spam_total, sorted_ig, root):
 
-    #print(info_gain_spam["money"])
-    #print(info_gain_ham["money"])
+    if len(sorted_ig) == 0:
+        return
 
-    return info_gain_spam
+    #print(len(sorted_ig))
 
+    best = list(sorted_ig.keys())[0]
+    ham_count = 0
+    spam_count = 0
+    if best in occur_ham:
+        ham_count += occur_ham.get(best)
+    if best in occur_spam:
+        spam_count += occur_spam.get(best)
+    count = ham_count+spam_count
 
+    ham_value = ham_count/count
+    spam_value = spam_count/count
+
+    count_not = ham_total+spam_total-count
+
+    ham_value_not = (spam_total+ham_total-ham_count+1)/(count_not+1)
+    spam_value_not = (spam_total + ham_total - spam_count+1) / (count_not+1)
+
+    left = Node(root, ham_value, spam_value, count)
+    right = Node(root, ham_value_not, spam_value_not, count_not)
+
+    root.insert(left, right)
+
+    sorted_ig.pop(best, None)
+
+    for word in sorted_ig:
+        if word is not None:
+            sorted_ig[word] = ig(ham_total, spam_total, entropy, word)
+
+    sort = sorted(sorted_ig, key=sorted_ig.get, reverse=True)
+
+    sorted_ig_new = dict()
+
+    for word in sort:
+        sorted_ig_new[word] = sorted_ig.get(word)
+
+    #print(len(sorted_ig_new))
+
+    left = id3(entropy, ham_total, spam_total, sorted_ig_new, left)
+    right = id3(entropy, ham_total, spam_total, sorted_ig_new, right)
+
+    return root
 
 if __name__ == '__main__':
-    info_gain_spam = readWords()
+    test = dict()
+    test[1] = 1
+    test[2] = 2
+    test.pop(2, None)
+    test.pop(1, None)
+    print(len(test))
+    #os.system("pause")
+    ham_total, spam_total, most_imp = readWords()
+    ham_percent = ham_total/(ham_total+spam_total)
+    spam_percent = spam_total/(ham_total+spam_total)
+    root = Node(None, ham_percent, spam_percent, ham_total+spam_total)
+    info_gain = dict()
+    ent = entropy(ham_total, spam_total)
+    for word in most_imp:
+        info_gain[word] = ig(ham_total, spam_total, ent, word)
+
+    sort = sorted(info_gain, key=info_gain.get, reverse=True)
+
+    sorted_ig = dict()
+
+    for word in sort:
+        sorted_ig[word] = info_gain.get(word)
+    tree = id3(entropy(ham_total, spam_total), ham_total, spam_total, sorted_ig, root)
+    tree.print()
+    print("Finished")
+
     # for i in info_gain_spam:
     #     print(info_gain_spam.get(i))
