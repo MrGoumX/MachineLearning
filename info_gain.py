@@ -59,17 +59,17 @@ def readWords():
         spam_total += 1
         file.close()
 
-    for word in counter_ham:
+    for word in occur_ham:
         if word not in all_words:
-            all_words[word] = counter_ham.get(word)
+            all_words[word] = occur_ham.get(word)
         else:
-            all_words[word] = counter_ham.get(word) + all_words.get(word)
+            all_words[word] = occur_ham.get(word) + all_words.get(word)
 
-    for word in counter_spam:
+    for word in occur_spam:
         if word not in all_words:
-            all_words[word] = counter_spam.get(word)
+            all_words[word] = occur_spam.get(word)
         else:
-            all_words[word] = counter_spam.get(word) + all_words.get(word)
+            all_words[word] = occur_spam.get(word) + all_words.get(word)
 
 
     words_count = 0
@@ -93,44 +93,84 @@ def readWords():
     info_gain_spam = dict()
     info_gain_ham = dict()
 
+    temp = []
+
+    # for word in all_words:
+    #     temp_sum = 0
+    #     if word in counter_ham:
+    #         temp_sum += counter_ham.get(word)
+    #     if word in counter_spam:
+    #         temp_sum += counter_spam.get(word)
+    #     temp_sum += 2
+    #
+    #     word_ham = 1
+    #     if word in counter_ham:
+    #         word_ham += counter_ham.get(word)
+    #
+    #     word_spam = 1
+    #     if word in counter_spam:
+    #         word_spam += counter_spam.get(word)
+    #
+    #     entropy_ham = -((word_ham)/temp_sum)*np.log2((word_ham)/temp_sum)
+    #     #print(entropy_ham)
+    #     entropy_spam = -((word_spam)/temp_sum)*np.log2((word_spam)/temp_sum)
+    #
+    #     #temp_div = all_words.get(word)
+    #     occur_ham_word = 1
+    #     if word in occur_ham:
+    #         occur_ham_word += occur_ham.get(word)
+    #
+    #     occur_spam_word = 1
+    #     if word in occur_spam:
+    #         occur_spam_word += occur_spam.get(word)
+    #
+    #     temp_div1 = (occur_spam_word)/(spam_total+1)
+    #     temp_div2 = (occur_ham_word)/(ham_total+1)
+    #
+    #     #print(entropy_ham)
+    #
+    #     gain_ham = entropy - temp_div2*entropy_ham
+    #     gain_spam = entropy - temp_div1*entropy_spam
+    #
+    #     info_gain_ham[word] = gain_ham
+    #     info_gain_spam[word] = gain_spam
+
+    most_imp = dict()
     for word in all_words:
-        temp_sum = 0
-        if word in counter_ham:
-            temp_sum += counter_ham.get(word)
-        if word in counter_spam:
-            temp_sum += counter_spam.get(word)
-        temp_sum += 2
-
-        word_ham = 1
-        if word in counter_ham:
-            word_ham += counter_ham.get(word)
-
-        word_spam = 1
-        if word in counter_spam:
-            word_spam += counter_spam.get(word)
-
-        entropy_ham = -((word_ham)/temp_sum)*np.log2((word_ham)/temp_sum)
-        #print(entropy_ham)
-        entropy_spam = -((word_spam)/temp_sum)*np.log2((word_spam)/temp_sum)
-
-        #temp_div = all_words.get(word)
-        occur_ham_word = 1
         if word in occur_ham:
-            occur_ham_word += occur_ham.get(word)
+            if occur_ham.get(word) > 100:
+                most_imp[word] = all_words.get(word)
 
-        occur_spam_word = 1
+    for word in all_words:
         if word in occur_spam:
-            occur_spam_word += occur_spam.get(word)
+            if occur_spam.get(word) > 100:
+                if word in most_imp:
+                    most_imp[word] = most_imp[word] + occur_spam.get(word)
+                else:
+                    most_imp[word] = occur_spam.get(word)
 
-        temp_div = (occur_spam_word+occur_ham_word)/(ham_total+spam_total+2)
+    for word in most_imp:
 
-        #print(temp_div*entropy_ham)
+        ham_word = 1
+        if word in occur_ham:
+            ham_word += occur_ham.get(word)
+        spam_word = 1
+        if word in occur_spam:
+            spam_word += occur_spam.get(word)
 
-        gain_ham = entropy - temp_div*entropy_ham
-        gain_spam = entropy - temp_div*entropy_spam
+        temp = (ham_word+spam_word)/(ham_total+spam_total+2)
+        temp2 = temp*(ham_total/(ham_total+spam_total+2))
+        print(temp2)
 
-        info_gain_ham[word] = gain_ham
-        info_gain_spam[word] = gain_spam
+
+
+    # temp.sort(reverse=True)
+    # for i in temp:
+    #     print(i)
+    #     #os.system("pause")
+
+    #print(info_gain_spam["money"])
+    #print(info_gain_ham["money"])
 
     return info_gain_spam
 
@@ -138,3 +178,5 @@ def readWords():
 
 if __name__ == '__main__':
     info_gain_spam = readWords()
+    # for i in info_gain_spam:
+    #     print(info_gain_spam.get(i))
