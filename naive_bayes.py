@@ -1,5 +1,4 @@
 import os
-import numpy as np
 
 ham = "/enron2/ham/"
 spam = "/enron2/spam/"
@@ -17,13 +16,16 @@ def readWords():
         file = open(filename, "r")
         message = file.read()
         contents = message.split(" ")
+        one_occur = []
         for word in contents:
+            if word not in one_occur:
+                one_occur.append(word)
+        for word in one_occur:
             if word not in counter_ham:
                 counter_ham.update({word: 1})
-                ham_total += 1
             else:
                 counter_ham[word] = counter_ham.get(word)+1
-                ham_total += 1
+        ham_total += 1
         file.close()
 
     for fname in os.listdir(os.getcwd()+spam):
@@ -31,13 +33,16 @@ def readWords():
         file = open(filename, "r")
         message = file.read()
         contents = message.split(" ")
+        one_occur = []
         for word in contents:
+            if word not in one_occur:
+                one_occur.append(word)
+        for word in one_occur:
             if word not in counter_spam:
                 counter_spam.update({word: 1})
-                spam_total += 1
             else:
                 counter_spam[word] = counter_spam.get(word) + 1
-                spam_total += 1
+        spam_total += 1
         file.close()
 
     return ham_total, spam_total
@@ -48,16 +53,11 @@ def classify(filename, ham_total, spam_total):
     message = opened_file.read()
     contents = message.split(" ")
 
+    ham_total += 1
+    spam_total += 1
+
     final_spam = spam_total / (spam_total + ham_total)
     final_ham = ham_total / (spam_total + ham_total)
-
-    #this_message = dict()
-
-    #for word in contents:
-     #   if word not in this_message:
-      #      this_message[word] = 1
-       # else:
-        #    this_message[word] += 1
 
     for word in contents:
         ham = counter_ham.get(word)
@@ -91,7 +91,8 @@ if __name__ == '__main__':
     #     else:
     #         answer = classify(ans, ham_total, spam_total)
     #         print(answer)
-    temp = "/enron1/ham"
+    temp = "/enron1/spam"
+
     for file in os.listdir(os.getcwd() + temp):
         print(temp + file)
         answer = classify(os.getcwd() + temp + "/" + file, ham_total, spam_total)
