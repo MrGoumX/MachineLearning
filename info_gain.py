@@ -42,6 +42,10 @@ counter_spam = dict()
 all_words = dict()
 occur_ham = dict()
 occur_spam = dict()
+f_words = []
+f_emails = 0
+f_ham = 0
+f_spam = 0
 
 def readWords():
 
@@ -113,7 +117,7 @@ def readWords():
 
     all_words_sorted = sorted(all_words, key=all_words.get, reverse=True)
 
-    percent = int(0.01*len(all_words_sorted))
+    percent = int(0.005*len(all_words_sorted))
 
     most_imp = dict()
 
@@ -143,7 +147,7 @@ def readWords():
 
 def ig(ham_total, spam_total, entropy, word):
 
-    word_sum = 0
+    word_sum = 2
     if word in occur_ham:
         word_sum += occur_ham.get(word)
     if word in occur_spam:
@@ -161,8 +165,8 @@ def ig(ham_total, spam_total, entropy, word):
     word_exists = word_sum/total_emails
     word_not_exists = (total_emails-word_sum)/total_emails
 
-    not_exists_ham = (total_emails-ham)/(total_emails)
-    not_exists_spam = (total_emails-spam)/(total_emails)
+    not_exists_ham = (total_emails-ham)/(total_emails+1)
+    not_exists_spam = (total_emails-spam)/(total_emails+1)
 
     exists_ham = (ham)/word_sum
     exists_spam = (spam)/word_sum
@@ -195,24 +199,37 @@ def id3(entropy, ham_total, spam_total, sorted_ig, root):
     if len(sorted_ig) == 0:
         return
 
+    if (ham_total+spam_total) == 0:
+        return
+
+    print(ham_total+spam_total)
+
     #print(len(sorted_ig))
 
     best = list(sorted_ig.keys())[0]
-    ham_count = 0
-    spam_count = 0
+    f_words.append(best)
+    ham_count = 1
+    spam_count = 1
     if best in occur_ham:
-        ham_count += occur_ham.get(best)
+        ham_count += (f_ham-occur_ham.get(best))
     if best in occur_spam:
-        spam_count += occur_spam.get(best)
+        spam_count += (f_spam-occur_spam.get(best))
     count = ham_count+spam_count
 
     ham_value = ham_count/count
     spam_value = spam_count/count
 
-    count_not = ham_total+spam_total-count
+    count_not = f_emails-count
 
-    ham_value_not = (spam_total+ham_total-ham_count+1)/(count_not+1)
-    spam_value_not = (spam_total + ham_total - spam_count+1) / (count_not+1)
+    #ham_value_not = (spam_total+ham_total-ham_count+1)/(count_not+1)
+    #spam_value_not = (spam_total + ham_total - spam_count+1) / (count_not+1)
+    ham_value_not = (ham_total-ham_count)/(count_not+1)
+    spam_value_not = (spam_total-spam_count)/(count_not+1)
+
+    print(ham_value)
+    print(spam_value)
+    print(ham_value_not)
+    print(spam_value_not)
 
     left = Node(root, ham_value, spam_value, count)
     right = Node(root, ham_value_not, spam_value_not, count_not)
@@ -223,7 +240,8 @@ def id3(entropy, ham_total, spam_total, sorted_ig, root):
 
     for word in sorted_ig:
         if word is not None:
-            sorted_ig[word] = ig(ham_total, spam_total, entropy, word)
+            sorted_ig[word] = ig(ham_count,  spam_count, entropy, word)
+            #sorted_ig[word] = ig(ham_total, spam_total, entropy, word)
 
     sort = sorted(sorted_ig, key=sorted_ig.get, reverse=True)
 
@@ -231,11 +249,14 @@ def id3(entropy, ham_total, spam_total, sorted_ig, root):
 
     for word in sort:
         sorted_ig_new[word] = sorted_ig.get(word)
+        #print(sorted_ig.get(word))
+    print("------------------------------------------")
+    #os.system("pause")
 
     #print(len(sorted_ig_new))
 
-    left = id3(entropy, ham_total, spam_total, sorted_ig_new, left)
-    right = id3(entropy, ham_total, spam_total, sorted_ig_new, right)
+    left = id3(entropy, ham_count, spam_count, sorted_ig_new, left)
+    #right = id3(entropy, ham_total, spam_total, sorted_ig_new, right)
 
     return root
 
@@ -252,6 +273,9 @@ if __name__ == '__main__':
     spam_percent = spam_total/(ham_total+spam_total)
     root = Node(None, ham_percent, spam_percent, ham_total+spam_total)
     info_gain = dict()
+    f_emails = ham_total + spam_total
+    f_ham = ham_total
+    f_spam = spam_total
     ent = entropy(ham_total, spam_total)
     for word in most_imp:
         info_gain[word] = ig(ham_total, spam_total, ent, word)
@@ -262,8 +286,11 @@ if __name__ == '__main__':
 
     for word in sort:
         sorted_ig[word] = info_gain.get(word)
-    tree = id3(entropy(ham_total, spam_total), ham_total, spam_total, sorted_ig, root)
-    tree.print()
+
+    best = list(sorted_ig.keys())[0]
+    print(best)
+    #tree = id3(entropy(ham_total, spam_total), ham_total, spam_total, sorted_ig, root)
+    #tree.print()
     print("Finished")
 
     # for i in info_gain_spam:
