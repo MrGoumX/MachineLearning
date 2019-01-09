@@ -7,8 +7,8 @@ class Node(object):
         self.parent = parent
         self.ham_prob = ham_prob
         self.spam_prob = spam_prob
-        self.left = Node()
-        self.right = Node()
+        self.left = None
+        self.right = None
         self.word = None
 
     def print(self):
@@ -39,6 +39,9 @@ class Node(object):
 
     def get_word(self):
         return self.word
+
+    def get_parent(self):
+        return self.parent
 
 ham_loc = "/enron2/ham/"
 spam_loc = "/enron2/spam/"
@@ -108,7 +111,7 @@ def readWords():
 
     all_words_sorted = sorted(all_words, key=all_words.get, reverse=True)
 
-    percent = int(0.005 * len(all_words_sorted))
+    percent = int(0.001 * len(all_words_sorted))
 
     most_imp = dict()
 
@@ -199,6 +202,8 @@ def ig(ham_total, spam_total, entropy, word):
 
     return ig
 
+test1 = []
+
 def best_info_gain(ham_count, spam_count, most_imp):
 
     info_gain = dict()
@@ -206,7 +211,7 @@ def best_info_gain(ham_count, spam_count, most_imp):
     ent = entropy(ham_count, spam_count)
     #print(ent)
     for word in most_imp:
-        info_gain[word] = ig(ham_count, spam_count, entropy(ham_count, spam_count), word)
+        info_gain[word] = ig(ham_count, spam_count, ent, word)
 
     sorted_words = sorted(info_gain, key=info_gain.get, reverse=True)
     for word in sorted_words:
@@ -231,8 +236,8 @@ def probabilities(ham_count, spam_count, word):
 
     total_occurs = word_in_spam + word_in_ham
 
-    prob_word_in_ham = word_in_ham/(total_occurs+1)
-    prob_word_in_spam = word_in_spam/(total_occurs+1)
+    prob_word_in_ham = word_in_ham/(total_occurs+2)
+    prob_word_in_spam = word_in_spam/(total_occurs+2)
 
     has_not_word = total_count - total_occurs
 
@@ -247,8 +252,8 @@ def probabilities(ham_count, spam_count, word):
         if word not in i:
             not_in_spam += 1
 
-    prob_no_word_in_ham = not_in_ham/(has_not_word+1)
-    prob_no_word_in_spam = not_in_spam/(has_not_word+1)
+    prob_no_word_in_ham = not_in_ham/(has_not_word+2)
+    prob_no_word_in_spam = not_in_spam/(has_not_word+2)
 
     return prob_word_in_ham, prob_word_in_spam, prob_no_word_in_ham, prob_no_word_in_spam
 
@@ -315,6 +320,7 @@ def id3(ham_total, spam_total, most_imp, root):
 if __name__ == '__main__':
 
     ham_count, spam_count, most_imp = readWords()
+    test1.append(entropy(ham_count, spam_count))
     # ham_count = ham_count
     # spam_count = spam_count
     # total_count = ham_count+spam_count
@@ -334,3 +340,39 @@ if __name__ == '__main__':
     print("Success")
     #root.print()
     #print(ham_count, spam_count, best)
+    test = os.getcwd()+"/enron1/ham/"
+    for f in os.listdir(test):
+        #print(f)
+        file = open(test+f, "r")
+        message = file.read()
+        testing = message.split(" ")
+        file_w = []
+        for i in testing:
+            if i in testing and i not in file_w:
+                file_w.append(i)
+        file.close()
+        ham_r = 0
+        spam_r = 0
+        temp = root
+        while temp is not None:
+            #if temp.get_word() in file_w:
+            if temp.get_word() in file_w:
+                temp = temp.get_left()
+                if temp.get_right() is None or temp.get_left() is None:
+                    break
+                #print(temp.get_word())
+            else:
+                temp = temp.get_right()
+                if temp.get_right() is None or temp.get_left() is None:
+                    break
+                #print(temp.get_word())
+            #else:
+                #continue
+        ham, spam = temp.get_parent().get_probs()
+        if ham > spam:
+            print("Ham")
+        elif ham < spam:
+            print("Spam")
+        else:
+            print('-')
+    #print(temp.get_probs())
