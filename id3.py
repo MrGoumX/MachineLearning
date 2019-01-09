@@ -1,14 +1,14 @@
 import os
 import numpy as np
 
-class Node():
+class Node(object):
 
-    def __init__(self, parent, ham_prob, spam_prob):
+    def __init__(self, parent=None, ham_prob=None, spam_prob=None):
         self.parent = parent
         self.ham_prob = ham_prob
         self.spam_prob = spam_prob
-        self.left = None
-        self.right = None
+        self.left = Node()
+        self.right = Node()
         self.word = None
 
     def print(self):
