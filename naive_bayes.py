@@ -91,7 +91,7 @@ if __name__ == '__main__':
     #     else:
     #         answer = classify(ans, ham_total, spam_total)
     #         print(answer)
-    temp = "/enron1/spam"
+    temp = "/enron1/ham"
 
     for file in os.listdir(os.getcwd() + temp):
         print(temp + file)
