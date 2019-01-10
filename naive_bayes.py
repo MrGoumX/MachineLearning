@@ -1,19 +1,19 @@
 import os
 import re
 
-ham = "/enron2/ham/"
-spam = "/enron2/spam/"
+#ham = "/enron2/ham/"
+#spam = "/enron2/spam/"
 
 counter_ham = dict()
 counter_spam = dict()
 
-def readWords():
+def readWords(ham_loc, spam_loc):
 
     ham_total = 0
     spam_total = 0
 
-    for fname in os.listdir(os.getcwd()+ham):
-        filename = os.getcwd()+ham+"/"+fname
+    for fname in os.listdir(os.getcwd()+ham_loc):
+        filename = os.getcwd()+ham_loc+fname
         file = open(filename, "r")
         message = file.read()
         contents = re.split(" | \r\n", message)
@@ -29,8 +29,8 @@ def readWords():
         ham_total += 1
         file.close()
 
-    for fname in os.listdir(os.getcwd()+spam):
-        filename = os.getcwd() + spam + fname
+    for fname in os.listdir(os.getcwd()+spam_loc):
+        filename = os.getcwd() + spam_loc+ fname
         file = open(filename, "r")
         message = file.read()
         contents = message.split(" ")
@@ -78,16 +78,64 @@ def classify(filename, ham_total, spam_total):
         if final_spam == 0 or final_ham == 0:
             break
 
-    if final_ham > final_spam:
-        return "The message is ham"
+    if final_ham >= final_spam:
+        return 1
     elif final_ham < final_spam:
-        return "The message is spam"
+        return 0
 
-if __name__ == '__main__':
-    ham_total, spam_total = readWords()
-    temp = "/enron1/ham"
+def init(ham_train, spam_train, test, validation):
 
-    for file in os.listdir(os.getcwd() + temp):
-        print(temp + file)
-        answer = classify(os.getcwd() + temp + "/" + file, ham_total, spam_total)
-        print(answer)
+    ham_total, spam_total = readWords(ham_train, spam_train)
+
+    test_size = len(os.listdir(os.getcwd()+test))
+
+    correct_test = 0
+
+    true_positive = 0
+    false_positive = 0
+    false_negative = 0
+
+    for file in os.listdir(os.getcwd()+test):
+        res = classify(os.getcwd()+test+file, ham_total, spam_total)
+
+        if "spam" in file and res == 0:
+            correct_test += 1
+            true_positive += 1
+        if "ham" in file and res == 1:
+            correct_test += 1
+            true_positive += 1
+        if "spam" in file and res == 1:
+            false_positive += 1
+        if "ham" in file and res == 0:
+            false_positive += 1
+
+    validation_size = len(os.listdir(os.getcwd()+validation))
+
+    correct_validation = 0
+
+    for file in os.listdir(os.getcwd()+validation):
+
+        res = classify(os.getcwd()+validation+file, ham_total, spam_total)
+
+        if "spam" in file and res == 0:
+            correct_validation += 1
+            true_positive += 1
+        if "ham" in file and res == 1:
+            correct_validation += 1
+            true_positive += 1
+        if "spam" in file and res == 1:
+            false_negative += 1
+        if "ham" in file and res == 0:
+            false_negative += 1
+
+    accuracy = correct_test/test_size
+
+    error = 1 - accuracy
+
+    precision = true_positive/(true_positive+false_positive)
+
+    recall = true_positive/(true_positive+false_negative)
+
+    f1 = 2*((precision*recall)/(precision+recall))
+
+    return accuracy, error, precision, recall, f1

@@ -50,8 +50,8 @@ class Node(object):
 
 
 # Files locations
-ham_loc = "/enron2/ham/"
-spam_loc = "/enron2/spam/"
+#ham_loc = "/enron2/ham/"
+#spam_loc = "/enron2/spam/"
 
 # All ham emails
 ham_emails = []
@@ -72,7 +72,7 @@ spam_count = 0
 # Entropy is entrop[0], global variable
 entrop = []
 
-def readWords():
+def readWords(ham_loc, spam_loc):
 
     # Ham and spam email numbers
     ham_count = 0
@@ -138,7 +138,7 @@ def readWords():
     all_words.pop(",", None)
     #all_words.pop("(", None)
     #all_words.pop(")", None)
-    # all_words.pop(":", None)
+    #all_words.pop(":", None)
 
     to_desc = sorted(all_words, key=all_words.get, reverse=True)
 
@@ -151,7 +151,7 @@ def readWords():
 
     percent = int(0.001 * len(all_words_sorted))
 
-    print("-----------------------------------\nNumber of words: ", percent, "\n--------------------------------------------")
+    #print("-----------------------------------\nNumber of words: ", percent, "\n--------------------------------------------")
 
     most_imp = dict()
 
@@ -344,39 +344,33 @@ def id3(ham_emails, spam_emails, most_imp, root):
 
     return root
 
-if __name__ == '__main__':
+def init(ham_train, spam_train, test, validation):
 
-    ham_count, spam_count, most_imp = readWords()
-    test1.append(entropy(ham_count, spam_count))
-    # ham_count = ham_count
-    # spam_count = spam_count
-    # total_count = ham_count+spam_count
-    # best = best_info_gain(ham_count, spam_count, most_imp)
-    # most_imp.pop(best, None)
-    # ham_count, spam_count = util(best)
-    # best = best_info_gain(ham_count, spam_count, most_imp)
-    # print(best)
-    total_count = ham_count+spam_count
-    #best = best_info_gain(ham_count, spam_count, most_imp)
-    ham_freq = ham_count/total_count
-    spam_freq = spam_count/total_count
+    ham_count, spam_count, most_imp = readWords(ham_train, spam_train)
+
+    total_count = ham_count + spam_count
+    ham_freq = ham_count / total_count
+    spam_freq = spam_count / total_count
     ent = entropy(ham_count, spam_count)
     entrop.append(ent)
     new_ham_emails = deepcopy(ham_emails)
     new_spam_emails = deepcopy(spam_emails)
     root = Node(None)
     root = id3(ham_emails, spam_emails, most_imp, root)
-    left = root.get_left()
-    right = root.get_right()
-    #print("Success")
-    #root.print()
-    #print(ham_count, spam_count, best)
-    test = os.getcwd()+"/enron1/ham/"
-    f_ham = 0
-    f_spam = 0
-    for f in os.listdir(test):
-        #print(f)
-        file = open(test+f, "r")
+
+    test_size = len(os.listdir(os.getcwd() + test))
+
+    correct_test = 0
+
+    true_positive = 0
+    false_positive = 0
+    false_negative = 0
+
+    for filename in os.listdir(os.getcwd() + test):
+
+        new_tree = root
+
+        file = open(os.getcwd() + test + filename, "r")
         message = file.read()
         testing = re.split(" | \r\n", message)
         file_w = []
@@ -384,33 +378,155 @@ if __name__ == '__main__':
             if i in testing and i not in file_w:
                 file_w.append(i)
         file.close()
-        ham_r = 0
-        spam_r = 0
-        temp = root
-        while temp is not None:
-            #print(temp.get_right().get_word())
-            #if temp.get_word() in file_w:
-            if temp.get_word() in file_w:
-                #print("Here")
-                temp = temp.get_left()
-                if temp.get_right() is None or temp.get_left() is None:
+
+        while new_tree is not None:
+            if new_tree.get_word() in file_w:
+                new_tree = new_tree.get_left()
+                if new_tree.get_right() is None or new_tree.get_left() is None:
                     break
-                #print(temp.get_word())
             else:
-                temp = temp.get_right()
-                if temp.get_right() is None or temp.get_left() is None:
+                new_tree = new_tree.get_right()
+                if new_tree.get_right() is None or new_tree.get_left() is None:
                     break
-                #print(temp.get_word())
-            #else:
-                #continue
-        ham, spam = temp.get_probs()
-        #print(ham, spam)
+        ham, spam = new_tree.get_probs()
         if ham >= spam:
-            #print("Ham")
-            f_ham += 1
-        elif ham < spam:
-            #print("Spam")
-            f_spam += 1
-    #print(temp.get_probs())
-    print("Number of ham is: ", f_ham)
-    print("Number of spam is: ", f_spam)
+            res = 1
+        else:
+            res = 0
+
+        if "spam" in filename and res == 0:
+            correct_test += 1
+            true_positive += 1
+        if "ham" in filename and res == 1:
+            correct_test += 1
+            true_positive += 1
+        if "spam" in filename and res == 1:
+            false_positive += 1
+        if "ham" in filename and res == 0:
+            false_positive += 1
+
+    validation_size = len(os.listdir(os.getcwd() + validation))
+
+    correct_validation = 0
+
+    for filename in os.listdir(os.getcwd() + validation):
+
+        new_tree = root
+
+        file = open(os.getcwd() + validation + filename, "r")
+        message = file.read()
+        testing = re.split(" | \r\n", message)
+        file_w = []
+        for i in testing:
+            if i in testing and i not in file_w:
+                file_w.append(i)
+        file.close()
+
+        while new_tree is not None:
+            if new_tree.get_word() in file_w:
+                new_tree = new_tree.get_left()
+                if new_tree.get_right() is None or new_tree.get_left() is None:
+                    break
+            else:
+                new_tree = new_tree.get_right()
+                if new_tree.get_right() is None or new_tree.get_left() is None:
+                    break
+        ham, spam = new_tree.get_probs()
+        if ham >= spam:
+            res = 1
+        else:
+            res = 0
+
+        if "spam" in filename and res == 0:
+            correct_validation += 1
+            true_positive += 1
+        if "ham" in filename and res == 1:
+            correct_validation += 1
+            true_positive += 1
+        if "spam" in filename and res == 1:
+            false_negative += 1
+        if "ham" in filename and res == 0:
+            false_negative += 1
+
+    accuracy = correct_test / test_size
+
+    error = 1 - accuracy
+
+    precision = true_positive / (true_positive + false_positive)
+
+    recall = true_positive / (true_positive + false_negative)
+
+    f1 = 2 * ((precision * recall) / (precision + recall))
+
+    return accuracy, error, precision, recall, f1
+
+# if __name__ == '__main__':
+#
+#     ham_count, spam_count, most_imp = readWords()
+#     test1.append(entropy(ham_count, spam_count))
+#     # ham_count = ham_count
+#     # spam_count = spam_count
+#     # total_count = ham_count+spam_count
+#     # best = best_info_gain(ham_count, spam_count, most_imp)
+#     # most_imp.pop(best, None)
+#     # ham_count, spam_count = util(best)
+#     # best = best_info_gain(ham_count, spam_count, most_imp)
+#     # print(best)
+#     total_count = ham_count+spam_count
+#     #best = best_info_gain(ham_count, spam_count, most_imp)
+#     ham_freq = ham_count/total_count
+#     spam_freq = spam_count/total_count
+#     ent = entropy(ham_count, spam_count)
+#     entrop.append(ent)
+#     new_ham_emails = deepcopy(ham_emails)
+#     new_spam_emails = deepcopy(spam_emails)
+#     root = Node(None)
+#     root = id3(ham_emails, spam_emails, most_imp, root)
+#     left = root.get_left()
+#     right = root.get_right()
+#     #print("Success")
+#     #root.print()
+#     #print(ham_count, spam_count, best)
+#     test = os.getcwd()+"/enron1/ham/"
+#     f_ham = 0
+#     f_spam = 0
+#     for f in os.listdir(test):
+#         #print(f)
+#         file = open(test+f, "r")
+#         message = file.read()
+#         testing = re.split(" | \r\n", message)
+#         file_w = []
+#         for i in testing:
+#             if i in testing and i not in file_w:
+#                 file_w.append(i)
+#         file.close()
+#         ham_r = 0
+#         spam_r = 0
+#         temp = root
+#         while temp is not None:
+#             #print(temp.get_right().get_word())
+#             #if temp.get_word() in file_w:
+#             if temp.get_word() in file_w:
+#                 #print("Here")
+#                 temp = temp.get_left()
+#                 if temp.get_right() is None or temp.get_left() is None:
+#                     break
+#                 #print(temp.get_word())
+#             else:
+#                 temp = temp.get_right()
+#                 if temp.get_right() is None or temp.get_left() is None:
+#                     break
+#                 #print(temp.get_word())
+#             #else:
+#                 #continue
+#         ham, spam = temp.get_probs()
+#         #print(ham, spam)
+#         if ham >= spam:
+#             #print("Ham")
+#             f_ham += 1
+#         elif ham < spam:
+#             #print("Spam")
+#             f_spam += 1
+#     #print(temp.get_probs())
+#     print("Number of ham is: ", f_ham)
+#     print("Number of spam is: ", f_spam)
