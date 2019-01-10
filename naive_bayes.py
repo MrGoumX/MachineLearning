@@ -1,4 +1,5 @@
 import os
+import re
 
 ham = "/enron2/ham/"
 spam = "/enron2/spam/"
@@ -15,7 +16,7 @@ def readWords():
         filename = os.getcwd()+ham+"/"+fname
         file = open(filename, "r")
         message = file.read()
-        contents = message.split(" ")
+        contents = re.split(" | \r\n", message)
         one_occur = []
         for word in contents:
             if word not in one_occur:
@@ -84,13 +85,6 @@ def classify(filename, ham_total, spam_total):
 
 if __name__ == '__main__':
     ham_total, spam_total = readWords()
-    # while(True):
-    #     ans = input("Give an input file. If you want to exit type exit\n")
-    #     if(ans == "exit"):
-    #         exit(0)
-    #     else:
-    #         answer = classify(ans, ham_total, spam_total)
-    #         print(answer)
     temp = "/enron1/ham"
 
     for file in os.listdir(os.getcwd() + temp):

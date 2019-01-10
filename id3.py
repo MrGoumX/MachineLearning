@@ -3,6 +3,8 @@ import numpy as np
 import re
 from copy import deepcopy
 
+np.seterr(divide='ignore', invalid='ignore')
+
 # Treenode class
 class Node(object):
 
@@ -132,6 +134,12 @@ def readWords():
         else:
             all_words[word] = np.abs(all_words.get(word) - spam_occurs.get(word)*analogy_spam)
 
+    all_words.pop(".", None)
+    all_words.pop(",", None)
+    #all_words.pop("(", None)
+    #all_words.pop(")", None)
+    # all_words.pop(":", None)
+
     to_desc = sorted(all_words, key=all_words.get, reverse=True)
 
     all_words_sorted = dict()
@@ -141,7 +149,7 @@ def readWords():
 
     #print(analogy)
 
-    percent = int(0.003 * len(all_words_sorted))
+    percent = int(0.001 * len(all_words_sorted))
 
     print("-----------------------------------\nNumber of words: ", percent, "\n--------------------------------------------")
 
@@ -222,20 +230,22 @@ def ig(ham_total, spam_total, entropy, word):
     word_exists = word_sum/total_emails
     word_not_exists = (total_emails-word_sum)/total_emails
 
-    not_exists_ham = (ham_total-ham)
-    not_exists_spam = (spam_total-spam)
+    not_exists_ham = (ham_total-ham)+1
+    not_exists_spam = (spam_total-spam)+1
 
-    temp_sum = not_exists_ham + not_exists_spam
+    temp_sum = not_exists_ham + not_exists_spam + 2
 
     #print(word_not_exists)
 
     not_exists_ham = (not_exists_ham)/(temp_sum)
     not_exists_spam = (not_exists_spam)/(temp_sum)
+    if temp_sum ==0:
+        print("-----------ham")
 
     #print(temp_sum)
 
-    exists_ham = (ham)/word_sum
-    exists_spam = (spam)/word_sum
+    exists_ham = (ham+1)/word_sum
+    exists_spam = (spam+1)/word_sum
 
     c_not_ham = not_exists_ham*np.log2(not_exists_ham)
     c_not_spam = not_exists_spam*np.log2(not_exists_spam)
@@ -361,7 +371,7 @@ if __name__ == '__main__':
     #print("Success")
     #root.print()
     #print(ham_count, spam_count, best)
-    test = os.getcwd()+"/enron1/spam/"
+    test = os.getcwd()+"/enron1/ham/"
     f_ham = 0
     f_spam = 0
     for f in os.listdir(test):
@@ -395,14 +405,12 @@ if __name__ == '__main__':
                 #continue
         ham, spam = temp.get_probs()
         #print(ham, spam)
-        if ham > spam:
+        if ham >= spam:
             #print("Ham")
             f_ham += 1
         elif ham < spam:
             #print("Spam")
             f_spam += 1
-        else:
-            print('-')
     #print(temp.get_probs())
     print("Number of ham is: ", f_ham)
     print("Number of spam is: ", f_spam)
