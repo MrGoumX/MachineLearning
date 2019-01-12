@@ -138,7 +138,7 @@ def readWords(ham_loc, spam_loc):
     for word in to_desc:
         all_words_sorted[word] = all_words.get(word)
 
-    percent = int(0.001 * len(all_words_sorted))
+    percent = int(0.003 * len(all_words_sorted))
 
     most_imp = dict()
 
