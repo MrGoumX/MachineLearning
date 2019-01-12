@@ -1,22 +1,24 @@
 import os
 import re
 
-#ham = "/enron2/ham/"
-#spam = "/enron2/spam/"
-
+# Dictionary that contains all the occurrences of the words in the ham emails
 counter_ham = dict()
+# Dictionary that contains all the occurrences of the words in the spam emails
 counter_spam = dict()
 
+
+# Function that reads all the emails, breaks the message in single words, counts the files and the occurrences of the words in the emails
 def readWords(ham_loc, spam_loc):
 
-    ham_total = 0
-    spam_total = 0
+    ham_total = len(os.listdir(os.getcwd()+ham_loc))
+    spam_total = len(os.listdir(os.getcwd()+spam_loc))
 
+    # For every file read the message break it down to single words (no duplicates of words) and update the dictionaries
     for fname in os.listdir(os.getcwd()+ham_loc):
         filename = os.getcwd()+ham_loc+fname
         file = open(filename, "r")
         message = file.read()
-        contents = re.split(" | \r\n", message)
+        contents = re.split("\s", message)
         one_occur = []
         for word in contents:
             if word not in one_occur:
@@ -26,14 +28,13 @@ def readWords(ham_loc, spam_loc):
                 counter_ham.update({word: 1})
             else:
                 counter_ham[word] = counter_ham.get(word)+1
-        ham_total += 1
         file.close()
 
     for fname in os.listdir(os.getcwd()+spam_loc):
         filename = os.getcwd() + spam_loc+ fname
         file = open(filename, "r")
         message = file.read()
-        contents = message.split(" ")
+        contents = re.split("\s", message)
         one_occur = []
         for word in contents:
             if word not in one_occur:
@@ -43,20 +44,23 @@ def readWords(ham_loc, spam_loc):
                 counter_spam.update({word: 1})
             else:
                 counter_spam[word] = counter_spam.get(word) + 1
-        spam_total += 1
         file.close()
 
     return ham_total, spam_total
 
+
+# Naive Bayes classifier
 def classify(filename, ham_total, spam_total):
 
+    # Open the file & finds what words of the message are in the dictionaries
     opened_file = open(filename, "r")
     message = opened_file.read()
-    contents = message.split(" ")
+    contents = re.split("\s", message)
 
     ham_total += 1
     spam_total += 1
 
+    # We calculate the probabilities of the message
     final_spam = spam_total / (spam_total + ham_total)
     final_ham = ham_total / (spam_total + ham_total)
 
@@ -78,11 +82,14 @@ def classify(filename, ham_total, spam_total):
         if final_spam == 0 or final_ham == 0:
             break
 
+    # If the probability of ham is bigger or equal to the probability of spam return 1, else 0
     if final_ham >= final_spam:
         return 1
     elif final_ham < final_spam:
         return 0
 
+
+# Helper function that is call from analysis contains the locations of the ham & spam trains, test & validation
 def init(ham_train, spam_train, test, validation):
 
     ham_total, spam_total = readWords(ham_train, spam_train)
@@ -128,13 +135,15 @@ def init(ham_train, spam_train, test, validation):
         if "ham" in file and res == 0:
             false_negative += 1
 
-    accuracy = correct_test/test_size
+    # Calculate accuracy, error, precision, recall & F1 and return them to analysis
 
-    error = 1 - accuracy
+    accuracy = correct_test/test_size*100
 
-    precision = true_positive/(true_positive+false_positive)
+    error = 100 - accuracy
 
-    recall = true_positive/(true_positive+false_negative)
+    precision = true_positive/(true_positive+false_positive)*100
+
+    recall = true_positive/(true_positive+false_negative)*100
 
     f1 = 2*((precision*recall)/(precision+recall))
 

@@ -19,7 +19,7 @@ validation = "/validate/"
 
 def main():
     print("Naive Bayes Results:")
-    accuracy1, error1, precision1, recall1, f11 = nb.init(enron1+train_ham, enron1+train_spam, enron1+test, enron2+validation)
+    accuracy1, error1, precision1, recall1, f11 = nb.init(enron1+train_ham, enron1+train_spam, enron1+train_ham, enron1+validation)
     print("Accuracy: ", accuracy1)
     print("Error: ", error1)
     print("Precision: ", precision1)
@@ -27,7 +27,7 @@ def main():
     print("F1: ", f11)
 
     print("\nID3 Results:")
-    accuracy, error, precision, recall, f1 = dt.init(enron1 + train_ham, enron1 + train_spam, enron1 + test, enron2 + validation)
+    accuracy, error, precision, recall, f1 = dt.init(enron1 + train_ham, enron1 + train_spam, enron1 + train_ham, enron1 + validation)
     print("Accuracy: ", accuracy)
     print("Error: ", error)
     print("Precision: ", precision)
@@ -85,4 +85,5 @@ def main():
     fig.tight_layout()
     plt.show()
 
-main()
+if __name__ == '__main__':
+    main()

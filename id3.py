@@ -5,7 +5,7 @@ from copy import deepcopy
 
 np.seterr(divide='ignore', invalid='ignore')
 
-# Treenode class
+# Tree node class
 class Node(object):
 
     def __init__(self, parent=None, ham_prob=None, spam_prob=None):
@@ -18,7 +18,6 @@ class Node(object):
 
     def print(self):
         print(self.get_probs())
-        #os.system("pause")
         if self.left is not None:
             self.left.print()
         if self.right is not None:
@@ -48,11 +47,6 @@ class Node(object):
     def get_parent(self):
         return self.parent
 
-
-# Files locations
-#ham_loc = "/enron2/ham/"
-#spam_loc = "/enron2/spam/"
-
 # All ham emails
 ham_emails = []
 # All spam emails
@@ -72,19 +66,22 @@ spam_count = 0
 # Entropy is entrop[0], global variable
 entrop = []
 
+
+# Function that reads all the emails, breaks the message in single words, counts the files and the occurrences of the words in the emails, save all the email as an example for id3
 def readWords(ham_loc, spam_loc):
 
     # Ham and spam email numbers
-    ham_count = 0
-    spam_count = 0
+    ham_count = len(os.listdir(os.getcwd()+ham_loc))
+    spam_count = len(os.listdir(os.getcwd()+spam_loc))
 
+    # For every file read the message break it down to single words (no duplicates of words) and update the dictionaries
     for fname in os.listdir(os.getcwd()+ham_loc):
         filename = os.getcwd()+ham_loc+"/"+fname
         file = open(filename, "r")
         # message of mail as string
         message = file.read()
         # list of words
-        contents = re.split(" | \r\n", message)
+        contents = re.split("\s", message)
         # list that has only the words and not the duplicates
         one_occur = []
         for word in contents:
@@ -95,7 +92,6 @@ def readWords(ham_loc, spam_loc):
                 ham_occurs.update({word: 1})
             else:
                 ham_occurs[word] = ham_occurs.get(word) + 1
-        ham_count += 1
         ham_emails.append(one_occur)
         file.close()
 
@@ -103,7 +99,7 @@ def readWords(ham_loc, spam_loc):
         filename = os.getcwd()+spam_loc+"/"+fname
         file = open(filename, "r")
         message = file.read()
-        contents = re.split(" | \r\n", message)
+        contents = re.split("\s", message)
         one_occur = []
         for word in contents:
             if word not in one_occur:
@@ -113,7 +109,6 @@ def readWords(ham_loc, spam_loc):
                 spam_occurs.update({word: 1})
             else:
                 spam_occurs[word] = spam_occurs.get(word) + 1
-        spam_count += 1
         spam_emails.append(one_occur)
         file.close()
 
@@ -134,11 +129,7 @@ def readWords(ham_loc, spam_loc):
         else:
             all_words[word] = np.abs(all_words.get(word) - spam_occurs.get(word)*analogy_spam)
 
-    all_words.pop(".", None)
-    all_words.pop(",", None)
-    #all_words.pop("(", None)
-    #all_words.pop(")", None)
-    #all_words.pop(":", None)
+    # Calculate the best words for the tree creation
 
     to_desc = sorted(all_words, key=all_words.get, reverse=True)
 
@@ -147,23 +138,18 @@ def readWords(ham_loc, spam_loc):
     for word in to_desc:
         all_words_sorted[word] = all_words.get(word)
 
-    #print(analogy)
-
     percent = int(0.001 * len(all_words_sorted))
-
-    #print("-----------------------------------\nNumber of words: ", percent, "\n--------------------------------------------")
 
     most_imp = dict()
 
     for i in range(0, percent):
-        #print(all_words_sorted[i], temp_d.get(all_words_sorted[i]))
-        #print(all_words_sorted[i], all_words.get(all_words_sorted[i]))
         word = to_desc[i]
-        #print(word, all_words.get(word)
         most_imp[word] = all_words.get(word)
 
     return ham_count, spam_count, most_imp
 
+
+# Function util, calculates & keep the emails that a word exists in ham & spam AND keep the emails that a wods DOES NOT exists in ham & spam emails
 def util(word, ham_emails, spam_emails):
 
     ham_in = []
@@ -206,10 +192,13 @@ def util(word, ham_emails, spam_emails):
 
     return ham_count, spam_count, ham_in, ham_not_in, spam_in, spam_not_in
 
+
+# Function that calculates the entropy
 def entropy(ham_total, spam_total):
     return -spam_total / (spam_total + ham_total) * np.log2(spam_total / (spam_total + ham_total)) - ham_total / (
                  spam_total + ham_total) * np.log2(ham_total / (spam_total + ham_total))
 
+# Function that calculates the informaion gain for a specific word
 def ig(ham_total, spam_total, entropy, word):
 
     word_sum = 2
@@ -235,14 +224,8 @@ def ig(ham_total, spam_total, entropy, word):
 
     temp_sum = not_exists_ham + not_exists_spam + 2
 
-    #print(word_not_exists)
-
     not_exists_ham = (not_exists_ham)/(temp_sum)
     not_exists_spam = (not_exists_spam)/(temp_sum)
-    if temp_sum ==0:
-        print("-----------ham")
-
-    #print(temp_sum)
 
     exists_ham = (ham+1)/word_sum
     exists_spam = (spam+1)/word_sum
@@ -261,31 +244,26 @@ def ig(ham_total, spam_total, entropy, word):
 
     ig = entropy - (ex + not_ex)
 
-    #print(ig)
-
     return ig
 
-test1 = []
 
+# Function that returns from the most valuable words the on with the best information gain
 def best_info_gain(ham_count, spam_count, most_imp):
 
     info_gain = dict()
     sorted_info_gain = dict()
-    #ent = entropy(ham_count, spam_count)
-    #print(ent)
     for word in most_imp:
         info_gain[word] = ig(ham_count, spam_count, entrop[0], word)
 
     sorted_words = sorted(info_gain, key=info_gain.get, reverse=True)
     for word in sorted_words:
         sorted_info_gain[word] = info_gain.get(word)
-        #print(word, info_gain.get(word))
-        #os.system("pause")
 
     best = list(sorted_info_gain)[0]
 
     return best
 
+# Function that builds recursively the id3 decision tree
 def id3(ham_emails, spam_emails, most_imp, root):
 
     ham_total = len(ham_emails)
@@ -301,8 +279,6 @@ def id3(ham_emails, spam_emails, most_imp, root):
         return root
 
     best = best_info_gain(ham_total, spam_total, most_imp)
-
-    #print(best)
 
     ham_count, spam_count, ham_in, ham_not_in, spam_in, spam_not_in = util(best, ham_emails, spam_emails)
 
@@ -344,6 +320,7 @@ def id3(ham_emails, spam_emails, most_imp, root):
 
     return root
 
+# Helper function that is call from analysis contains the locations of the ham & spam trains, test & validation
 def init(ham_train, spam_train, test, validation):
 
     ham_count, spam_count, most_imp = readWords(ham_train, spam_train)
@@ -353,9 +330,7 @@ def init(ham_train, spam_train, test, validation):
     spam_freq = spam_count / total_count
     ent = entropy(ham_count, spam_count)
     entrop.append(ent)
-    new_ham_emails = deepcopy(ham_emails)
-    new_spam_emails = deepcopy(spam_emails)
-    root = Node(None)
+    root = Node(None, ham_freq, spam_freq)
     root = id3(ham_emails, spam_emails, most_imp, root)
 
     test_size = len(os.listdir(os.getcwd() + test))
@@ -448,85 +423,14 @@ def init(ham_train, spam_train, test, validation):
         if "ham" in filename and res == 0:
             false_negative += 1
 
-    accuracy = correct_test / test_size
+    accuracy = correct_test / test_size*100
 
-    error = 1 - accuracy
+    error = 100 - accuracy
 
-    precision = true_positive / (true_positive + false_positive)
+    precision = true_positive / (true_positive + false_positive)*100
 
-    recall = true_positive / (true_positive + false_negative)
+    recall = true_positive / (true_positive + false_negative)*100
 
     f1 = 2 * ((precision * recall) / (precision + recall))
 
     return accuracy, error, precision, recall, f1
-
-# if __name__ == '__main__':
-#
-#     ham_count, spam_count, most_imp = readWords()
-#     test1.append(entropy(ham_count, spam_count))
-#     # ham_count = ham_count
-#     # spam_count = spam_count
-#     # total_count = ham_count+spam_count
-#     # best = best_info_gain(ham_count, spam_count, most_imp)
-#     # most_imp.pop(best, None)
-#     # ham_count, spam_count = util(best)
-#     # best = best_info_gain(ham_count, spam_count, most_imp)
-#     # print(best)
-#     total_count = ham_count+spam_count
-#     #best = best_info_gain(ham_count, spam_count, most_imp)
-#     ham_freq = ham_count/total_count
-#     spam_freq = spam_count/total_count
-#     ent = entropy(ham_count, spam_count)
-#     entrop.append(ent)
-#     new_ham_emails = deepcopy(ham_emails)
-#     new_spam_emails = deepcopy(spam_emails)
-#     root = Node(None)
-#     root = id3(ham_emails, spam_emails, most_imp, root)
-#     left = root.get_left()
-#     right = root.get_right()
-#     #print("Success")
-#     #root.print()
-#     #print(ham_count, spam_count, best)
-#     test = os.getcwd()+"/enron1/ham/"
-#     f_ham = 0
-#     f_spam = 0
-#     for f in os.listdir(test):
-#         #print(f)
-#         file = open(test+f, "r")
-#         message = file.read()
-#         testing = re.split(" | \r\n", message)
-#         file_w = []
-#         for i in testing:
-#             if i in testing and i not in file_w:
-#                 file_w.append(i)
-#         file.close()
-#         ham_r = 0
-#         spam_r = 0
-#         temp = root
-#         while temp is not None:
-#             #print(temp.get_right().get_word())
-#             #if temp.get_word() in file_w:
-#             if temp.get_word() in file_w:
-#                 #print("Here")
-#                 temp = temp.get_left()
-#                 if temp.get_right() is None or temp.get_left() is None:
-#                     break
-#                 #print(temp.get_word())
-#             else:
-#                 temp = temp.get_right()
-#                 if temp.get_right() is None or temp.get_left() is None:
-#                     break
-#                 #print(temp.get_word())
-#             #else:
-#                 #continue
-#         ham, spam = temp.get_probs()
-#         #print(ham, spam)
-#         if ham >= spam:
-#             #print("Ham")
-#             f_ham += 1
-#         elif ham < spam:
-#             #print("Spam")
-#             f_spam += 1
-#     #print(temp.get_probs())
-#     print("Number of ham is: ", f_ham)
-#     print("Number of spam is: ", f_spam)
