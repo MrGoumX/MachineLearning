@@ -21,7 +21,7 @@ def main():
 
     # Choose the dataset for train, test, validation from the choices above
     dataset = enron1
-    validate = enron2
+    validate = enron3
 
     # Print the results in console
     print("Naive Bayes Results:")

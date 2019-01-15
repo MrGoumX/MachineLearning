@@ -57,8 +57,8 @@ def classify(filename, ham_total, spam_total):
     message = opened_file.read()
     contents = re.split("\s", message)
 
-    ham_total += 1
-    spam_total += 1
+    ham_total += 2
+    spam_total += 2
 
     # We calculate the probabilities of the message
     final_spam = spam_total / (spam_total + ham_total)
@@ -78,9 +78,6 @@ def classify(filename, ham_total, spam_total):
 
         final_spam *= (spam/spam_total)
         final_ham *= (ham/ham_total)
-
-        if final_spam == 0 or final_ham == 0:
-            break
 
     # If the probability of ham is bigger or equal to the probability of spam return 1, else 0
     if final_ham >= final_spam:
